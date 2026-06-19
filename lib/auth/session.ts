@@ -38,8 +38,7 @@ export async function getSeller(): Promise<Seller | null> {
 export async function requireSeller(): Promise<Seller> {
   const seller = await getSeller();
   if (!seller) {
-    // /login is built in Phase 3; cast past typed-routes until the route literal exists.
-    redirect("/login" as Parameters<typeof redirect>[0]);
+    redirect("/login");
   }
   return seller;
 }

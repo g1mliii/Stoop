@@ -22,10 +22,11 @@ export type Product = z.infer<typeof productRowSchema>;
 
 // Form / server-action input (Phase 3.4 add/edit product modal). qty_available null = unlimited.
 export const productInputSchema = z.object({
-  name: z.string().min(1, "Give your item a name."),
+  name: z.string().min(1, "Give your item a name.").max(120),
   description: z.string().max(2000).optional(),
   price_cents: cents,
-  image_url: z.string().optional(),
+  image_upload_id: uuid.nullish(),
+  clear_image: z.boolean().optional(),
   qty_available: z.number().int().nonnegative().nullable().optional(),
   is_active: z.boolean().default(true),
   allergens: z.array(z.string()).default([]),

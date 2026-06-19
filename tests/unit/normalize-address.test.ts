@@ -1,7 +1,10 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
-import { normalizeAddress } from "@/lib/utils/normalize-address";
+import {
+  containsLikelyUnitNumber,
+  normalizeAddress
+} from "@/lib/utils/normalize-address";
 
 const streetName = fc.constantFrom(
   "main st",
@@ -33,7 +36,9 @@ describe("normalizeAddress", () => {
         const base = `${n} ${name}`;
         const expected = normalizeAddress({ street: base, postalCode: code });
         for (const variant of withUnit(base, u)) {
-          expect(normalizeAddress({ street: variant, postalCode: code })).toBe(expected);
+          expect(normalizeAddress({ street: variant, postalCode: code })).toBe(
+            expected
+          );
         }
       })
     );
@@ -65,9 +70,9 @@ describe("normalizeAddress", () => {
   });
 
   it("produces the documented `street|POSTAL` shape", () => {
-    expect(normalizeAddress({ street: "345 Main St, Unit 12", postalCode: "k1a 0b1" })).toBe(
-      "345 main st|K1A0B1"
-    );
+    expect(
+      normalizeAddress({ street: "345 Main St, Unit 12", postalCode: "k1a 0b1" })
+    ).toBe("345 main st|K1A0B1");
   });
 
   it("strips bare comma-separated trailing units (no designator word)", () => {
@@ -83,15 +88,32 @@ describe("normalizeAddress", () => {
 
   it("does not swallow street words that follow a designator term", () => {
     // "building"/"room" etc. only count as unit designators when a digit-bearing token follows.
-    expect(normalizeAddress({ street: "123 Building Road", postalCode: "K1A 0B1" })).toBe(
-      "123 building road|K1A0B1"
-    );
-    expect(normalizeAddress({ street: "50 Room Crescent", postalCode: "K1A 0B1" })).toBe(
-      "50 room crescent|K1A0B1"
-    );
+    expect(
+      normalizeAddress({ street: "123 Building Road", postalCode: "K1A 0B1" })
+    ).toBe("123 building road|K1A0B1");
+    expect(
+      normalizeAddress({ street: "50 Room Crescent", postalCode: "K1A 0B1" })
+    ).toBe("50 room crescent|K1A0B1");
     // A real unit on such a street is still stripped and groups with the unitless address.
-    expect(normalizeAddress({ street: "123 Building Road, Apt 4b", postalCode: "K1A 0B1" })).toBe(
-      "123 building road|K1A0B1"
+    expect(
+      normalizeAddress({ street: "123 Building Road, Apt 4b", postalCode: "K1A 0B1" })
+    ).toBe("123 building road|K1A0B1");
+  });
+});
+
+describe("containsLikelyUnitNumber", () => {
+  it("flags public pickup notes that expose unit-style details", () => {
+    expect(containsLikelyUnitNumber("Meet at unit 1204")).toBe(true);
+    expect(containsLikelyUnitNumber("Buzz #12 at pickup")).toBe(true);
+    expect(containsLikelyUnitNumber("Suite 4B at the west door")).toBe(true);
+  });
+
+  it("allows public lobby/front-desk pickup notes", () => {
+    expect(containsLikelyUnitNumber("Meet in the lobby or at the front desk.")).toBe(
+      false
     );
+    expect(
+      containsLikelyUnitNumber("I'll message exact pickup details after order.")
+    ).toBe(false);
   });
 });

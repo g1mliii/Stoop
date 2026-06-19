@@ -17,6 +17,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot
   },
+  // Cleaned seller uploads are served from R2 (Phase 3.5). Allow the R2 public hosts.
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "*.r2.dev" },
+      { protocol: "https", hostname: "uploads.stoop.app" }
+    ]
+  },
   headers() {
     return [
       {

@@ -22,7 +22,8 @@ const eslintConfig = [
       "test-results/**",
       "aptbazaar Design System/**",
       "cloudflare-env.d.ts",
-      "lib/supabase/database.types.ts"
+      "lib/supabase/database.types.ts",
+      "image-processor/**"
     ]
   },
   js.configs.recommended,

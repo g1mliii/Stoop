@@ -4,8 +4,13 @@
 
 const MAX_LENGTH = 40;
 
-// Words that collide with our own routes. `_next` can never be produced by slugify
+// Words that collide with our own routes, plus brand/authority terms we never want a seller to
+// claim as a storefront URL (impersonation). `_next` can never be produced by slugify
 // (underscores are stripped) but is listed for completeness.
+//
+// NOTE: keep this in sync with the reserved-word guard inside create_store_quickstart
+// (latest definition in supabase/migrations/0018_store_name_abuse_and_rls_initplan.sql) — the
+// RPC re-checks at insert time.
 const RESERVED = new Set([
   "admin",
   "api",
@@ -20,7 +25,20 @@ const RESERVED = new Set([
   "_next",
   "auth",
   "login",
-  "signup"
+  "signup",
+  // Brand / authority impersonation.
+  "stoop",
+  "support",
+  "help",
+  "official",
+  "billing",
+  "payments",
+  "team",
+  "staff",
+  "about",
+  "contact",
+  "terms",
+  "privacy"
 ]);
 
 const FALLBACK = "stoop";

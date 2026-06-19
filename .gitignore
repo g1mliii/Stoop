@@ -34,6 +34,7 @@ dist/
 .wrangler/
 .dev.vars
 cloudflare-env.d.ts
+image-processor/image-processor-env.d.ts
 
 # Browser verification artifacts
 .playwright-mcp/

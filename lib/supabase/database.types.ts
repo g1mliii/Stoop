@@ -194,6 +194,56 @@ export type Database = {
           },
         ]
       }
+      image_uploads: {
+        Row: {
+          created_at: string
+          height: number | null
+          id: string
+          key_final: string | null
+          key_pending: string | null
+          reason: string | null
+          requested_by: string
+          status: Database["public"]["Enums"]["image_upload_status"]
+          store_id: string
+          updated_at: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          key_final?: string | null
+          key_pending?: string | null
+          reason?: string | null
+          requested_by: string
+          status?: Database["public"]["Enums"]["image_upload_status"]
+          store_id: string
+          updated_at?: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          key_final?: string | null
+          key_pending?: string | null
+          reason?: string | null
+          requested_by?: string
+          status?: Database["public"]["Enums"]["image_upload_status"]
+          store_id?: string
+          updated_at?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "image_uploads_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           id: string
@@ -616,6 +666,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_store_quickstart: {
+        Args: {
+          p_user_id: string
+          p_contact_email: string
+          p_display_name: string
+          p_item_name: string
+          p_pickup_method: Database["public"]["Enums"]["pickup_method"]
+          p_price_cents: number
+          p_slug_base: string
+          p_store_name: string
+        }
+        Returns: {
+          slug: string
+          store_id: string
+        }[]
+      }
       get_order_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -636,6 +702,7 @@ export type Database = {
     }
     Enums: {
       building_access_type: "open" | "invite"
+      image_upload_status: "pending" | "ready" | "rejected"
       membership_status: "pending" | "active" | "removed"
       order_status:
         | "new"

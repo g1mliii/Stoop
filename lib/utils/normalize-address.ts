@@ -14,6 +14,13 @@ export interface AddressInput {
 const UNIT_DESIGNATORS =
   /\b(?:apartment|apt|unit|suite|ste|building|bldg|floor|fl|room|rm|number|no|penthouse|ph|basement|bsmt)\b\.?\s*#?\s*(?=[a-z0-9-]*\d)[a-z0-9][a-z0-9-]*/g;
 
+const PUBLIC_UNIT_HINTS =
+  /\b(?:apartment|apt|unit|suite|ste|floor|fl|room|rm|number|no|penthouse|ph|basement|bsmt)\b\.?\s*#?\s*(?=[a-z0-9-]*\d)[a-z0-9][a-z0-9-]*|#\s*[a-z0-9][a-z0-9-]*\b/i;
+
+export function containsLikelyUnitNumber(value: string): boolean {
+  return PUBLIC_UNIT_HINTS.test(value);
+}
+
 /**
  * Strips unit/apartment information from a single-line street address.
  * Handles explicit designators ("Apt 4B", "Unit 12", "#5", "Suite 200"),

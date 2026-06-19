@@ -21,6 +21,25 @@
       "id": "e9d60bdf69424185b62e4b8a5cb050c4"
     }
   ],
+  // Phase 3.5 image pipeline: edge PUTs pending bytes into R2 and enqueues a job. The Queue
+  // CONSUMER + R2 are bound to the separate image-processor worker/container, not here.
+  // Top-level is the local-dev default — it points at the PREVIEW bucket + queue so `wrangler dev`
+  // never writes into production (and matches the preview NEXT_PUBLIC_UPLOADS_BASE_URL below).
+  // The env.production block overrides these to the production resources.
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS_BUCKET",
+      "bucket_name": "aptbazaar-uploads-preview"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "IMAGE_QUEUE",
+        "queue": "image-processing-preview"
+      }
+    ]
+  },
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
@@ -33,7 +52,8 @@
     "NEXT_PUBLIC_APP_URL": "http://localhost:3000",
     "NEXT_PUBLIC_APP_VERSION": "0.1.0",
     "NEXT_PUBLIC_SUPABASE_URL": "https://duokiqmxtoolhpnmqcku.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_lBQLE5VYQIMQwDONxgRVfA_LcZKI2vw"
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_lBQLE5VYQIMQwDONxgRVfA_LcZKI2vw",
+    "NEXT_PUBLIC_UPLOADS_BASE_URL": "https://pub-122c96f0cc5f48c6ba883aceaf3ecafb.r2.dev"
   },
   "env": {
     "preview": {
@@ -49,6 +69,20 @@
           "id": "91b34bdb47614027a20b3c9da9227ed7"
         }
       ],
+      "r2_buckets": [
+        {
+          "binding": "UPLOADS_BUCKET",
+          "bucket_name": "aptbazaar-uploads-preview"
+        }
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "IMAGE_QUEUE",
+            "queue": "image-processing-preview"
+          }
+        ]
+      },
       "vars": {
         "APP_ENV": "preview",
         "CLOUDFLARE_EMAIL_FROM": "orders@stoop.app",
@@ -57,7 +91,8 @@
         "NEXT_PUBLIC_APP_URL": "https://aptbazaar-preview.workers.dev",
         "NEXT_PUBLIC_APP_VERSION": "0.1.0",
         "NEXT_PUBLIC_SUPABASE_URL": "https://duokiqmxtoolhpnmqcku.supabase.co",
-        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_lBQLE5VYQIMQwDONxgRVfA_LcZKI2vw"
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_lBQLE5VYQIMQwDONxgRVfA_LcZKI2vw",
+        "NEXT_PUBLIC_UPLOADS_BASE_URL": "https://pub-122c96f0cc5f48c6ba883aceaf3ecafb.r2.dev"
       }
     },
     "production": {
@@ -73,6 +108,20 @@
           "id": "3c6fb81fbec24d67a81c57276241ca0c"
         }
       ],
+      "r2_buckets": [
+        {
+          "binding": "UPLOADS_BUCKET",
+          "bucket_name": "aptbazaar-uploads"
+        }
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "IMAGE_QUEUE",
+            "queue": "image-processing"
+          }
+        ]
+      },
       "vars": {
         "APP_ENV": "production",
         "CLOUDFLARE_EMAIL_FROM": "orders@stoop.app",
@@ -81,7 +130,8 @@
         "NEXT_PUBLIC_APP_URL": "https://stoop.app",
         "NEXT_PUBLIC_APP_VERSION": "0.1.0",
         "NEXT_PUBLIC_SUPABASE_URL": "https://duokiqmxtoolhpnmqcku.supabase.co",
-        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_lBQLE5VYQIMQwDONxgRVfA_LcZKI2vw"
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_lBQLE5VYQIMQwDONxgRVfA_LcZKI2vw",
+        "NEXT_PUBLIC_UPLOADS_BASE_URL": "https://pub-ec534f264f174603a02f40cdd0f18fac.r2.dev"
       }
     }
   }

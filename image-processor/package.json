@@ -1,0 +1,25 @@
+{
+  "name": "aptbazaar-image-processor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "tail": "wrangler tail",
+    "typegen": "wrangler types --env-interface ImageProcessorEnv image-processor-env.d.ts",
+    "typecheck": "npm run typegen && tsc --noEmit",
+    "verify": "npm run typecheck"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.0.30"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "wrangler": "^4.101.0"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1",
+    "ws": "^8.21.0"
+  }
+}
