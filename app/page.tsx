@@ -23,9 +23,11 @@ export default function Home() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/api/health">Health</Link>
             </Button>
-            <Button size="sm">
-              <QrCode aria-hidden="true" />
-              Open your stoop
+            <Button size="sm" asChild>
+              <Link href="/signup">
+                <QrCode aria-hidden="true" />
+                Open your stoop
+              </Link>
             </Button>
           </div>
         </header>
@@ -44,9 +46,11 @@ export default function Home() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button>
-                <Store aria-hidden="true" />
-                Start setup
+              <Button asChild>
+                <Link href="/signup">
+                  <Store aria-hidden="true" />
+                  Start setup
+                </Link>
               </Button>
               <Button variant="secondary">
                 <Printer aria-hidden="true" />

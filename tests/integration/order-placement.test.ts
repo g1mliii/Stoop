@@ -329,9 +329,13 @@ describe("get_order_by_token after placement", () => {
   it("returns nothing for an expired token", async () => {
     const token = generateToken();
     const placed = await service.rpc("place_order", args({ p_token: token }));
+    // Expire well into the past. expires_at is compared against the DB server's now(); a 1-second
+    // margin is smaller than the clock skew between the local test machine and the remote project,
+    // so a token "expired 1s ago" by the local clock can still look live to the server. An hour of
+    // slack makes the assertion immune to any realistic skew.
     await service
       .from("order_tracking_tokens")
-      .update({ expires_at: new Date(Date.now() - 1000).toISOString() })
+      .update({ expires_at: new Date(Date.now() - 60 * 60 * 1000).toISOString() })
       .eq("order_id", placed.data![0]!.order_id);
 
     const { data } = await anonClient().rpc("get_order_by_token", { p_token: token });

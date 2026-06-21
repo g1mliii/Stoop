@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 
 import { Button } from "@/app/components/ui/button";
 import { Card } from "@/app/components/ui/card";
 import { Receipt } from "@/app/components/ui/receipt";
 import { Stamp } from "@/app/components/ui/stamp";
+import { Toast } from "@/app/components/ui/toast";
+import { resumeCheckout } from "@/lib/actions/checkout";
 import { cn } from "@/lib/utils/cn";
-import type { OrderStatus } from "@/lib/schemas/order";
+import type { OrderStatus, PaymentMode, PaymentStatus } from "@/lib/schemas/order";
 import type { TrackedItem } from "@/lib/orders/tracking";
-import { formatPriceCents } from "@/lib/utils/price";
+import { formatMoney } from "@/lib/pricing/currency";
 
 // Phase 4.6: order tracking view. Matches OrderTracking.jsx.
 //
@@ -42,6 +44,8 @@ type TrackingProps = {
   token: string;
   orderRef: string;
   initialStatus: OrderStatus;
+  paymentMode: PaymentMode;
+  paymentStatus: PaymentStatus;
   storeName: string;
   storeSlug: string | null;
   pickupWindow: string | null;
@@ -54,6 +58,8 @@ export function Tracking({
   token,
   orderRef,
   initialStatus,
+  paymentMode,
+  paymentStatus,
   storeName,
   storeSlug,
   pickupWindow,
@@ -62,13 +68,38 @@ export function Tracking({
   items
 }: TrackingProps) {
   const [status, setStatus] = useState<OrderStatus>(initialStatus);
+  const [currentPaymentStatus, setCurrentPaymentStatus] =
+    useState<PaymentStatus>(paymentStatus);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [paying, startPaying] = useTransition();
+
+  // An online order that hasn't been paid yet (customer bailed at Stripe, the session expired, or a
+  // card was declined → 'failed'). "Pay now" mints a live Checkout session (5.5a) so the order
+  // never dead-ends; a declined attempt stays recoverable.
+  const needsPayment =
+    paymentMode === "online" &&
+    (currentPaymentStatus === "unpaid" || currentPaymentStatus === "failed");
+
+  function payNow() {
+    setPayError(null);
+    startPaying(async () => {
+      const result = await resumeCheckout(token);
+      if (result.ok) {
+        window.location.href = result.url;
+        return;
+      }
+      setPayError(result.error);
+    });
+  }
 
   const refetch = useCallback(async () => {
     try {
       const res = await fetch(`/api/track/${token}`, { cache: "no-store" });
       if (!res.ok) return;
-      const data: { orderStatus?: OrderStatus } = await res.json();
+      const data: { orderStatus?: OrderStatus; paymentStatus?: PaymentStatus } =
+        await res.json();
       if (data.orderStatus) setStatus(data.orderStatus);
+      if (data.paymentStatus) setCurrentPaymentStatus(data.paymentStatus);
     } catch {
       // Offline / transient — the next tick or focus retries.
     }
@@ -94,7 +125,7 @@ export function Tracking({
 
   const receiptLines = items.map((i) => ({
     label: `${i.quantity}× ${i.name}`,
-    value: formatPriceCents(i.priceCents * i.quantity)
+    value: formatMoney(i.priceCents * i.quantity)
   }));
 
   return (
@@ -106,16 +137,40 @@ export function Tracking({
       </div>
 
       <h1 className="mt-4 text-center font-display text-36 leading-tight text-ink">
-        {cancelled ? "This order was cancelled." : "Your order is in."}
+        {cancelled
+          ? "This order was cancelled."
+          : needsPayment
+            ? "Finish your payment."
+            : "Your order is in."}
       </h1>
       <p className="mt-1 text-center font-sans text-15 text-ink-2">
         {cancelled
           ? `${storeName} cancelled this order. Reach out if that's a surprise.`
-          : `${storeName} will let you know the moment it's ready.`}
+          : needsPayment
+            ? `${storeName} holds this order until you pay.`
+            : `${storeName} will let you know the moment it's ready.`}
       </p>
       <p className="mt-2 text-center font-mono text-12 uppercase tracking-[0.08em] text-ink-3">
         Order {orderRef} · tracking link saved
       </p>
+
+      {needsPayment ? (
+        <Card className="mt-6">
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-mono text-15 font-bold tabular-nums text-ink">
+              {formatMoney(totalCents)}
+            </span>
+            <Button disabled={paying} onClick={payNow} type="button" variant="primary">
+              {paying ? "Opening checkout…" : "Pay now"}
+            </Button>
+          </div>
+          {payError ? (
+            <Toast className="mt-3 w-full justify-center" tone="danger">
+              {payError}
+            </Toast>
+          ) : null}
+        </Card>
+      ) : null}
 
       {!cancelled ? (
         <Card className="mt-6">
@@ -163,7 +218,7 @@ export function Tracking({
           }
           number={orderRef}
           title="Order"
-          total={formatPriceCents(totalCents)}
+          total={formatMoney(totalCents)}
         />
       </div>
 

@@ -1,4 +1,5 @@
 import { getSeller } from "@/lib/auth/session";
+import { getConnectedAccount } from "@/lib/stripe/connected-account";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import { SettingsScreen } from "./settings-screen";
@@ -16,13 +17,11 @@ export default async function SettingsPage() {
     .limit(1)
     .maybeSingle();
 
+  // connected_accounts is service-role only, so the user-scoped client would always read null.
+  // getConnectedAccount goes through the secret client (scoped to the authenticated seller).
   let stripeReady = false;
   if (seller) {
-    const { data: connected } = await supabase
-      .from("connected_accounts")
-      .select("charges_enabled")
-      .eq("seller_id", seller.id)
-      .maybeSingle();
+    const connected = await getConnectedAccount(seller.id);
     stripeReady = connected?.charges_enabled ?? false;
   }
 

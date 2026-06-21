@@ -4,12 +4,13 @@ import { Minus, Plus, ShoppingBag, X } from "lucide-react";
 
 import { Button } from "@/app/components/ui/button";
 import { Drawer } from "@/app/components/ui/drawer";
-import { formatPriceCents } from "@/lib/utils/price";
+import { formatMoney } from "@/lib/pricing/currency";
+import { PLATFORM_FEE_BPS, computePlatformFee, formatBps } from "@/lib/pricing/fee";
 
 import type { CartLine } from "./use-cart";
 
 // Phase 4.2: slide-up cart sheet with receipt-style totals. Matches CartDrawer.jsx.
-// TOTAL = subtotal: the customer never pays a platform surcharge. The 3% fee is carved from
+// TOTAL = subtotal: the customer never pays a platform surcharge. The platform fee is carved from
 // the seller's payout via Stripe application_fee_amount (Phase 5), shown here only as an
 // informational "incl." line on online carts. Pay-at-pickup carts show subtotal alone.
 
@@ -35,7 +36,7 @@ export function CartDrawer({
   onCheckout
 }: CartDrawerProps) {
   const empty = lines.length === 0;
-  const feeCents = Math.round(subtotalCents * 0.03);
+  const feeCents = computePlatformFee(subtotalCents);
 
   return (
     <>
@@ -76,7 +77,7 @@ export function CartDrawer({
                   <div className="min-w-0 flex-1">
                     <div className="ab-label truncate text-ink">{product.name}</div>
                     <div className="font-mono text-12 tabular-nums text-ink-3">
-                      {formatPriceCents(product.price_cents)} each
+                      {formatMoney(product.price_cents)} each
                     </div>
                   </div>
                   <span className="inline-flex items-center gap-2 rounded-pill border border-line bg-paper-2 px-1">
@@ -107,17 +108,17 @@ export function CartDrawer({
             <div className="mt-5 space-y-1 border-t border-dashed border-line pt-4 font-mono text-13 tabular-nums">
               <div className="flex justify-between text-ink-2">
                 <span>Subtotal</span>
-                <span>{formatPriceCents(subtotalCents)}</span>
+                <span>{formatMoney(subtotalCents)}</span>
               </div>
               {showPlatformFee ? (
                 <div className="flex justify-between text-ink-3">
-                  <span>Platform fee (3%)</span>
-                  <span>incl. {formatPriceCents(feeCents)}</span>
+                  <span>Platform fee ({formatBps(PLATFORM_FEE_BPS)})</span>
+                  <span>incl. {formatMoney(feeCents)}</span>
                 </div>
               ) : null}
               <div className="flex justify-between pt-1 text-15 font-bold text-ink">
                 <span>TOTAL</span>
-                <span>{formatPriceCents(subtotalCents)}</span>
+                <span>{formatMoney(subtotalCents)}</span>
               </div>
             </div>
 
@@ -127,7 +128,7 @@ export function CartDrawer({
               size="lg"
               variant="primary"
             >
-              Checkout — {formatPriceCents(subtotalCents)}
+              Checkout — {formatMoney(subtotalCents)}
             </Button>
           </>
         )}

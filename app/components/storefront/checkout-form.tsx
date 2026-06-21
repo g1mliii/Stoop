@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
 import { useId, useMemo, useRef, useState, useTransition } from "react";
 
 import { Button } from "@/app/components/ui/button";
@@ -9,45 +8,71 @@ import { Input, Textarea } from "@/app/components/ui/form";
 import { Toast } from "@/app/components/ui/toast";
 import { placeOrder } from "@/lib/actions/orders";
 import { pickupOptionsFor } from "@/lib/orders/pickup";
+import type { PaymentMode } from "@/lib/schemas/order";
 import { cn } from "@/lib/utils/cn";
-import { formatPriceCents } from "@/lib/utils/price";
+import { formatMoney } from "@/lib/pricing/currency";
 
 import type { CartLine } from "./use-cart";
 import type { StorefrontStore } from "./types";
 
-// Phase 4.3: order placement form. Matches CheckoutForm.jsx. A UUIDv4 idempotency key is minted
-// once on mount and reused across retries from this form instance, so a double-tap on flaky
+// Coerce a naturally-typed phone number into E.164 so the customer doesn't have to know the
+// "+14155550100" format. v1 is Canada-only (+1), so a bare 10-digit number gets +1; a leading 1
+// or an explicit + is respected. Empty stays empty (the field is optional).
+function toE164(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("+")) {
+    return `+${trimmed.slice(1).replace(/\D/g, "")}`;
+  }
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return digits ? `+${digits}` : "";
+}
+
+// Phase 4.3 / 5.5: order placement form. Matches CheckoutForm.jsx. A UUIDv4 idempotency key is
+// minted once on mount and reused across retries from this form instance, so a double-tap on flaky
 // mobile data can't create two orders (it replays to the same row in place_order).
 //
-// Phase 4 has no Stripe, so every order is pay-at-pickup. The payment-mode radio only renders
-// once a store has BOTH modes available (online connected + accept_pay_at_pickup) — Phase 5
-// wires that. Until then the submit reads "Place order".
+// The payment-mode radio renders only when the store has BOTH modes (online connected +
+// accept_pay_at_pickup). With one mode the radio is hidden and the submit label reflects it:
+// "Pay & order" (online) vs "Place order" (pay-at-pickup). Online submits redirect to Stripe.
 
 type CheckoutFormProps = {
   open: boolean;
   store: StorefrontStore;
+  onlineReady: boolean;
   lines: CartLine[];
   subtotalCents: number;
   onBack: () => void;
   onPlaced: (token: string) => void;
+  onRedirect: (url: string) => void;
 };
 
 export function CheckoutForm({
   open,
   store,
+  onlineReady,
   lines,
   subtotalCents,
   onBack,
-  onPlaced
+  onPlaced,
+  onRedirect
 }: CheckoutFormProps) {
   const pickupOptions = useMemo(() => pickupOptionsFor(store), [store]);
   const emailHelpId = useId();
+
+  const canPickup = store.accept_pay_at_pickup;
+  const bothModes = onlineReady && canPickup;
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [pickup, setPickup] = useState(pickupOptions[0] ?? "");
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>(
+    onlineReady ? "online" : "pay_at_pickup"
+  );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -61,11 +86,12 @@ export function CheckoutForm({
       JSON.stringify({
         storeId: store.id,
         email: email.trim().toLowerCase(),
+        paymentMode,
         items: lines
           .map((l) => [l.product.id, l.qty] as const)
           .sort(([a], [b]) => a.localeCompare(b))
       }),
-    [store.id, email, lines]
+    [store.id, email, paymentMode, lines]
   );
   const idempotencyRef = useRef<{ sig: string; key: string } | null>(null);
 
@@ -92,16 +118,15 @@ export function CheckoutForm({
     const idempotencyKey = idempotencyRef.current.key;
 
     startTransition(async () => {
-      // Strip the spaces/dashes/parens people naturally type (and that the placeholder shows) so a
-      // number like "+1 416 555 0140" still satisfies the strict E.164 schema instead of being
-      // rejected at submit.
-      const normalizedPhone = phone.replace(/[\s().-]/g, "");
+      // Accept naturally-typed numbers ("(416) 555-0140", "416 555 0140") by coercing to E.164 and
+      // defaulting the country code to +1 (v1 is Canada-only), instead of rejecting at submit.
+      const normalizedPhone = toE164(phone);
       const result = await placeOrder({
         storeId: store.id,
         customerName,
         customerEmail,
         customerPhoneE164: normalizedPhone ? normalizedPhone : undefined,
-        paymentMode: "pay_at_pickup",
+        paymentMode,
         pickupWindow: pickup || undefined,
         notes: notes.trim() ? notes.trim() : undefined,
         idempotencyKey,
@@ -109,7 +134,11 @@ export function CheckoutForm({
       });
 
       if (result.ok) {
-        onPlaced(result.token);
+        if ("redirectUrl" in result) {
+          onRedirect(result.redirectUrl);
+        } else {
+          onPlaced(result.token);
+        }
         return;
       }
       setError(
@@ -121,16 +150,7 @@ export function CheckoutForm({
   }
 
   return (
-    <Drawer open={open} side="bottom" title="Checkout" className="pt-5">
-      <button
-        aria-label="Back to cart"
-        className="absolute left-5 top-5 text-ink-3 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-verdigris"
-        onClick={onBack}
-        type="button"
-      >
-        <ArrowLeft aria-hidden="true" className="h-5 w-5 stroke-[1.5]" />
-      </button>
-
+    <Drawer onBack={onBack} open={open} side="bottom" title="Checkout">
       <form
         className="space-y-4"
         onSubmit={(event) => {
@@ -173,7 +193,7 @@ export function CheckoutForm({
             inputMode="tel"
             name="customerPhone"
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="+1 416 555 0140"
+            placeholder="(416) 555-0140"
             type="tel"
             value={phone}
           />
@@ -218,14 +238,49 @@ export function CheckoutForm({
           />
         </label>
 
+        {bothModes ? (
+          <div>
+            <span className="ab-label mb-1 block text-ink">Payment</span>
+            <div aria-label="Payment" className="grid gap-2" role="radiogroup">
+              {(
+                [
+                  { value: "online", label: "Pay online" },
+                  { value: "pay_at_pickup", label: "Pay at pickup" }
+                ] as const
+              ).map((option) => (
+                <label
+                  className={cn(
+                    "cursor-pointer rounded-sm border px-4 py-2 text-left font-sans text-14 transition-colors duration-fast ease-stoop focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-verdigris",
+                    paymentMode === option.value
+                      ? "border-verdigris bg-verdigris-3 text-ink"
+                      : "border-line bg-surface text-ink-2 hover:bg-paper-2"
+                  )}
+                  key={option.value}
+                >
+                  <input
+                    checked={paymentMode === option.value}
+                    className="sr-only"
+                    name="paymentMode"
+                    onChange={() => setPaymentMode(option.value)}
+                    type="radio"
+                    value={option.value}
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <div className="flex justify-between border-t border-dashed border-line pt-4 font-mono text-15 font-bold tabular-nums text-ink">
           <span>TOTAL</span>
-          <span>{formatPriceCents(subtotalCents)}</span>
+          <span>{formatMoney(subtotalCents)}</span>
         </div>
 
         <p className="ab-caption text-ink-3">
-          By placing this order, you agree to pick up at the location the seller shares
-          after checkout. You&apos;ll pay at pickup.
+          {paymentMode === "online"
+            ? "You'll pay securely by card on the next screen. The seller shares pickup details after your order."
+            : "By placing this order, you agree to pick up at the location the seller shares after checkout. You'll pay at pickup."}
         </p>
 
         {error ? (
@@ -241,7 +296,13 @@ export function CheckoutForm({
           type="submit"
           variant="primary"
         >
-          {pending ? "Placing your order…" : "Place order"}
+          {pending
+            ? paymentMode === "online"
+              ? "Sending you to checkout…"
+              : "Placing your order…"
+            : paymentMode === "online"
+              ? "Pay & order"
+              : "Place order"}
         </Button>
       </form>
     </Drawer>

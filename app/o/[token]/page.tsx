@@ -43,6 +43,8 @@ export default async function OrderTrackingPage({
       initialStatus={order.order_status}
       items={items}
       orderRef={orderRefFrom(order.id)}
+      paymentMode={order.payment_mode}
+      paymentStatus={order.payment_status}
       pickupNote={store.pickupNote}
       pickupWindow={order.pickup_window}
       storeName={store.name}

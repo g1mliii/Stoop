@@ -19,7 +19,8 @@ import {
 import { EMPTY_STATES } from "@/lib/copy/empty-states";
 import type { Product } from "@/lib/schemas/product";
 import { cn } from "@/lib/utils/cn";
-import { formatPriceCents, parsePriceToCents } from "@/lib/utils/price";
+import { formatMoney } from "@/lib/pricing/currency";
+import { parsePriceToCents } from "@/lib/utils/price";
 
 const ALLERGEN_OPTIONS = ["wheat", "dairy", "eggs", "nuts", "soy", "sesame"];
 const TILE_TINTS = ["bg-verdigris-3", "bg-marigold-3", "bg-teal-3", "bg-info-3"];
@@ -81,7 +82,7 @@ export function ProductsScreen({
           }
         />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-line bg-surface shadow-sm">
+        <div className="rounded-lg border border-line bg-surface shadow-sm">
           {products.map((product) => (
             <ProductRow
               key={product.id}
@@ -172,7 +173,7 @@ function ProductRow({
       </div>
 
       <span className="text-right font-mono text-14 font-medium text-ink">
-        {formatPriceCents(product.price_cents)}
+        {formatMoney(product.price_cents)}
       </span>
 
       <span
@@ -257,7 +258,7 @@ function ProductModal({
   const formId = useId();
   const [name, setName] = useState(product?.name ?? "");
   const [price, setPrice] = useState(
-    product ? formatPriceCents(product.price_cents) : ""
+    product ? formatMoney(product.price_cents) : ""
   );
   const [qty, setQty] = useState(
     product?.qty_available != null ? String(product.qty_available) : ""
@@ -351,7 +352,7 @@ function ProductModal({
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               onBlur={() =>
-                setPrice(price ? formatPriceCents(parsePriceToCents(price)) : "")
+                setPrice(price ? formatMoney(parsePriceToCents(price)) : "")
               }
               placeholder="$12.00"
             />

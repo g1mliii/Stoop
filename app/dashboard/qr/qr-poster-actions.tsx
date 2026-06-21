@@ -54,7 +54,7 @@ export function QrPosterActions({
   }
 
   return (
-    <div className="flex flex-wrap gap-3 print:hidden">
+    <div className="flex flex-wrap justify-center gap-3 lg:justify-start print:hidden">
       <Button onClick={() => window.print()}>
         <Printer aria-hidden="true" />
         Print poster

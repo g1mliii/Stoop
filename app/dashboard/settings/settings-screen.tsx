@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertCircle, Check } from "lucide-react";
+import Link from "next/link";
 import { useId, useState, useTransition, type ReactNode } from "react";
 
 import { Button } from "@/app/components/ui/button";
@@ -98,8 +99,8 @@ function SectionCard({
 function StripeSection({ ready }: { ready: boolean }) {
   return (
     <SectionCard
-      title="Payments"
-      description="Stoop never holds your money. Customers pay directly into your Stripe account; Stoop takes a fee at the point of sale."
+      title="Stripe connection"
+      description="Stoop never holds your money. Customers pay directly into your Stripe account; Money is where you manage the handoff."
     >
       <div
         className={cn(
@@ -123,12 +124,12 @@ function StripeSection({ ready }: { ready: boolean }) {
           </p>
           <p className="mt-0.5 text-12 text-ink-2">
             {ready
-              ? "Manage charges, payouts, and bank details in Stripe."
+              ? "Open Money to reach your Stripe Express dashboard."
               : "Until Stripe's connected, customers can't pay online. You can still take pay-at-pickup orders."}
           </p>
         </div>
-        <Button variant={ready ? "secondary" : "ink"} size="sm" disabled>
-          {ready ? "Manage in Stripe" : "Connect Stripe"}
+        <Button asChild variant={ready ? "secondary" : "ink"} size="sm">
+          <Link href="/dashboard/money">{ready ? "Open Money" : "Connect in Money"}</Link>
         </Button>
       </div>
       {!ready ? (

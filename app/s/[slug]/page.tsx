@@ -7,6 +7,7 @@ import type {
   StorefrontProduct,
   StorefrontStore
 } from "@/app/components/storefront/types";
+import { storeChargesEnabled } from "@/lib/stripe/connected-account";
 import { createSupabaseAnonClient } from "@/lib/supabase/anon";
 import { createSupabaseSecretClient } from "@/lib/supabase/secret";
 
@@ -100,7 +101,16 @@ export default async function StorefrontPage({
 
   const active = await loadActiveStore(slug);
   if (active) {
-    return <Storefront products={active.products} store={active.store} />;
+    // Whether to offer the "Pay online" path. Read server-side via the secret client because
+    // connected_accounts is service-role only and never reaches a public surface.
+    const onlineReady = await storeChargesEnabled(active.store.id);
+    return (
+      <Storefront
+        onlineReady={onlineReady}
+        products={active.products}
+        store={active.store}
+      />
+    );
   }
 
   const inactive = await loadInactiveStore(slug);

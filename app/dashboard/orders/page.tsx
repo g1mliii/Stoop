@@ -9,7 +9,7 @@ import { Stamp, type StampStatus } from "@/app/components/ui/stamp";
 import { NUDGE_DISMISSED_COOKIE } from "@/lib/cookie-names";
 import { EMPTY_STATES } from "@/lib/copy/empty-states";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { formatPriceCents } from "@/lib/utils/price";
+import { formatMoney } from "@/lib/pricing/currency";
 
 type OrderRow = {
   id: string;
@@ -72,7 +72,7 @@ export default async function OrdersPage() {
               </span>
               <Stamp status={order.order_status}>{order.order_status}</Stamp>
               <span className="text-right font-mono text-14 font-medium text-ink">
-                {formatPriceCents(order.total_cents)}
+                {formatMoney(order.total_cents)}
               </span>
             </div>
           ))}

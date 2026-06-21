@@ -56,6 +56,13 @@ export default async function QrPage({
 
   const url = storefrontUrl(store.slug);
   const svgMarkup = await storefrontQrSvg(store.slug);
+  // The qrcode lib emits an SVG with only a viewBox (no width/height), so on its own it falls back
+  // to the CSS default replaced-element size (300×150) and overflows the card. Force the displayed
+  // copy to fill its sized wrapper. The download/print copy (svgMarkup) stays untouched.
+  const svgDisplay = svgMarkup.replace(
+    "<svg ",
+    '<svg style="display:block;width:224px;height:224px;margin:0 auto" '
+  );
 
   return (
     <section className="mx-auto max-w-3xl">
@@ -79,37 +86,37 @@ export default async function QrPage({
         </header>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+      <div className="grid gap-6 lg:grid-cols-[24rem_1fr] lg:items-start">
         <article className="mx-auto w-full max-w-sm rounded-xl border border-line bg-surface p-8 text-center shadow-sm">
           <p className="font-display text-28 text-ink">{store.name}</p>
           <p className="mt-1 text-14 text-ink-3">
             {pickupLabel(store.pickup_method, store.pickup_window_label)}
           </p>
           <div
-            className="mx-auto mt-6 h-56 w-56 [&_svg]:h-full [&_svg]:w-full"
+            className="mt-6"
             // QR is server-rendered SVG from our own poster utility (no user HTML).
-            dangerouslySetInnerHTML={{ __html: svgMarkup }}
+            dangerouslySetInnerHTML={{ __html: svgDisplay }}
           />
           <p className="mt-6 text-16 font-semibold text-ink">Scan to order</p>
           <p className="mt-1 font-mono text-13 text-ink-3 break-all">{url}</p>
         </article>
 
-        <div className="lg:pt-2">
+        <div className="space-y-8 lg:pt-2">
           <QrPosterActions
             storefrontUrl={url}
             svgMarkup={svgMarkup}
             slug={store.slug}
           />
-        </div>
-      </div>
 
-      <div className="mt-8 print:hidden">
-        <h2 className="mb-3 text-16 font-semibold text-ink">Scans</h2>
-        <EmptyState
-          icon={QrCode}
-          title={EMPTY_STATES.scans.title}
-          body={EMPTY_STATES.scans.body}
-        />
+          <div className="print:hidden">
+            <h2 className="mb-3 text-16 font-semibold text-ink">Scans</h2>
+            <EmptyState
+              icon={QrCode}
+              title={EMPTY_STATES.scans.title}
+              body={EMPTY_STATES.scans.body}
+            />
+          </div>
+        </div>
       </div>
     </section>
   );

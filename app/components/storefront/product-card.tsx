@@ -4,7 +4,7 @@ import { Minus, Plus } from "lucide-react";
 import Image from "next/image";
 
 import { cn } from "@/lib/utils/cn";
-import { formatPriceCents } from "@/lib/utils/price";
+import { formatMoney } from "@/lib/pricing/currency";
 
 import type { StorefrontProduct } from "./types";
 
@@ -81,7 +81,7 @@ export function ProductCard({ product, qty, onAdd, onInc, onDec }: ProductCardPr
 
         <div className="mt-2 flex items-center justify-between">
           <span className="font-mono text-15 tabular-nums text-ink">
-            {formatPriceCents(product.price_cents)}
+            {formatMoney(product.price_cents)}
           </span>
 
           {soldOut ? (

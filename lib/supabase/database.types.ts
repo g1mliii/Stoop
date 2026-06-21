@@ -594,6 +594,7 @@ export type Database = {
           id: string
           payload_jsonb: Json
           processed_at: string | null
+          processing_started_at: string | null
           received_at: string
           stripe_event_id: string
           type: string
@@ -604,6 +605,7 @@ export type Database = {
           id?: string
           payload_jsonb: Json
           processed_at?: string | null
+          processing_started_at?: string | null
           received_at?: string
           stripe_event_id: string
           type: string
@@ -614,6 +616,7 @@ export type Database = {
           id?: string
           payload_jsonb?: Json
           processed_at?: string | null
+          processing_started_at?: string | null
           received_at?: string
           stripe_event_id?: string
           type?: string
@@ -666,6 +669,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_stripe_event: {
+        Args: {
+          p_stripe_event_id: string
+          p_stale_after_seconds?: number
+        }
+        Returns: boolean
+      }
       create_store_quickstart: {
         Args: {
           p_user_id: string
@@ -720,6 +730,14 @@ export type Database = {
           total_cents: number
           replayed: boolean
         }[]
+      }
+      mark_order_refunded: {
+        Args: {
+          p_order_id: string
+          p_charge_id: string
+          p_amount_refunded: number
+        }
+        Returns: string | null
       }
     }
     Enums: {

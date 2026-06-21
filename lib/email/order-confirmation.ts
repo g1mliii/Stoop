@@ -1,6 +1,6 @@
 import "server-only";
 
-import { optionalEnv, requiredEnv } from "@/lib/env";
+import { appBaseUrl, optionalEnv } from "@/lib/env";
 import { sendEmail } from "@/lib/email/send-email";
 import {
   buildCustomerOrderEmail,
@@ -12,10 +12,6 @@ import { createSupabaseSecretClient } from "@/lib/supabase/secret";
 // Phase 4.5: order confirmation emails. One to the customer (tracking URL), one to the seller
 // (dashboard). Sent after a successful, non-replayed placeOrder. These are transactional, so
 // no unsubscribe link is required — but they still carry the physical-address footer.
-
-function appBaseUrl(): string {
-  return requiredEnv("NEXT_PUBLIC_APP_URL").replace(/\/+$/, "");
-}
 
 export async function sendOrderConfirmationEmails(args: {
   orderId: string;

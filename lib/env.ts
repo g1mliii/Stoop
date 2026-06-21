@@ -13,6 +13,11 @@ export function optionalEnv(name: string): string | undefined {
   return value && value.length > 0 ? value : undefined;
 }
 
+/** App origin with any trailing slashes stripped, for building absolute links. */
+export function appBaseUrl(): string {
+  return requiredEnv("NEXT_PUBLIC_APP_URL").replace(/\/+$/, "");
+}
+
 export const appEnvironment =
   optionalEnv("NEXT_PUBLIC_APP_ENV") ?? optionalEnv("APP_ENV") ?? "development";
 

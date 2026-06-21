@@ -96,7 +96,7 @@ describe("placeOrder", () => {
   it("rejects online orders before calling the placement RPC", async () => {
     await expect(placeOrder(orderInput({ paymentMode: "online" }))).resolves.toEqual({
       ok: false,
-      error: "Online payment isn't ready for this stoop yet. Choose pay at pickup."
+      error: "Online payment isn't set up for this stoop yet. Choose pay at pickup."
     });
 
     expect(mocks.orderRpc).not.toHaveBeenCalled();

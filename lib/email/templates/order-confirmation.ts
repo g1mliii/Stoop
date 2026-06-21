@@ -1,4 +1,5 @@
-import { formatPriceCents } from "@/lib/utils/price";
+import { emailFooter as footer, escapeHtml } from "@/lib/email/html";
+import { formatMoney } from "@/lib/pricing/currency";
 import type { PaymentMode } from "@/lib/schemas/order";
 
 // Phase 4.5 templates. Kit voice: sentence case, second-person, plain copy, no emoji, no error
@@ -24,19 +25,11 @@ type OrderEmailArgs = {
 type CustomerArgs = OrderEmailArgs & { trackingUrl: string };
 type SellerArgs = OrderEmailArgs & { dashboardUrl: string };
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 function linesText(lines: OrderEmailLine[]): string {
   return lines
     .map(
       (l) =>
-        `${l.quantity} × ${l.name} — ${formatPriceCents(l.priceCents * l.quantity)}`
+        `${l.quantity} × ${l.name} — ${formatMoney(l.priceCents * l.quantity)}`
     )
     .join("\n");
 }
@@ -46,22 +39,11 @@ function linesHtml(lines: OrderEmailLine[]): string {
     .map(
       (l) =>
         `<tr><td style="padding:4px 0;">${l.quantity} × ${escapeHtml(l.name)}</td>` +
-        `<td style="padding:4px 0;text-align:right;font-family:monospace;">${formatPriceCents(
+        `<td style="padding:4px 0;text-align:right;font-family:monospace;">${formatMoney(
           l.priceCents * l.quantity
         )}</td></tr>`
     )
     .join("");
-}
-
-function footer(address?: string): { text: string; html: string } {
-  const brand = "Stoop";
-  const text = address ? `${brand}\n${address}` : brand;
-  const html = address
-    ? `<p style="color:#7a766c;font-size:12px;margin-top:24px;">${brand}<br/>${escapeHtml(
-        address
-      )}</p>`
-    : `<p style="color:#7a766c;font-size:12px;margin-top:24px;">${brand}</p>`;
-  return { text, html };
 }
 
 function paymentLine(mode: PaymentMode): string {
@@ -83,7 +65,7 @@ export function buildCustomerOrderEmail(args: CustomerArgs): {
     `We'll email you when it's ready for pickup at ${args.storeName}.`,
     ``,
     linesText(args.lines),
-    `Total — ${formatPriceCents(args.totalCents)}`,
+    `Total — ${formatMoney(args.totalCents)}`,
     paymentLine(args.paymentMode),
     pickup,
     ``,
@@ -102,7 +84,7 @@ export function buildCustomerOrderEmail(args: CustomerArgs): {
     )}.</p>`,
     `<table style="width:100%;border-collapse:collapse;">${linesHtml(args.lines)}`,
     `<tr><td style="padding:8px 0;border-top:1px dashed #ccc;font-weight:600;">Total</td>` +
-      `<td style="padding:8px 0;border-top:1px dashed #ccc;text-align:right;font-family:monospace;font-weight:600;">${formatPriceCents(
+      `<td style="padding:8px 0;border-top:1px dashed #ccc;text-align:right;font-family:monospace;font-weight:600;">${formatMoney(
         args.totalCents
       )}</td></tr></table>`,
     `<p>${paymentLine(args.paymentMode)}</p>`,
@@ -130,7 +112,7 @@ export function buildSellerOrderEmail(args: SellerArgs): {
     `From ${args.customerName}.`,
     ``,
     linesText(args.lines),
-    `Total — ${formatPriceCents(args.totalCents)}`,
+    `Total — ${formatMoney(args.totalCents)}`,
     paymentLine(args.paymentMode),
     pickup,
     ``,
@@ -146,7 +128,7 @@ export function buildSellerOrderEmail(args: SellerArgs): {
     `<p>From ${escapeHtml(args.customerName)}.</p>`,
     `<table style="width:100%;border-collapse:collapse;">${linesHtml(args.lines)}`,
     `<tr><td style="padding:8px 0;border-top:1px dashed #ccc;font-weight:600;">Total</td>` +
-      `<td style="padding:8px 0;border-top:1px dashed #ccc;text-align:right;font-family:monospace;font-weight:600;">${formatPriceCents(
+      `<td style="padding:8px 0;border-top:1px dashed #ccc;text-align:right;font-family:monospace;font-weight:600;">${formatMoney(
         args.totalCents
       )}</td></tr></table>`,
     `<p>${paymentLine(args.paymentMode)}</p>`,
