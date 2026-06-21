@@ -9,6 +9,9 @@ permissions:
   contents: read
   deployments: write
 
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -24,6 +27,17 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install image processor dependencies
+        run: npm --prefix image-processor ci
+
+      - name: Cache Next.js build
+        uses: actions/cache@v5
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
 
       - name: Verify
         run: npm run verify
@@ -101,6 +115,14 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Cache Next.js build
+        uses: actions/cache@v5
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
 
       - name: Build OpenNext bundle
         run: npx opennextjs-cloudflare build
