@@ -58,20 +58,26 @@ function is granted to `service_role` only; the JSON is Zod-validated at the loa
 > dashboard numbers — the SQL math (GMV, per-order fees, top-N) is covered there, not in the unit
 > suite. The unit test now pins the Zod boundary mapping only.
 
-### Order tracking pauses its poll once SSE covers the order — `app/o/[token]/tracking.tsx`
+### Order tracking backs its poll off (never stops it) once SSE is healthy — `app/o/[token]/tracking.tsx`
 
-The tracker ran a 20s poll **and** an `EventSource` simultaneously. The catch: seller order-status
-actions publish to the stream, but **Stripe webhook payment/refund changes do not** — they surface
-only through the poll. So the fix is conditional, not blanket:
+The tracker ran a 20s poll **and** an `EventSource` simultaneously — redundant load at scale. Two
+constraints shape the fix:
 
-- **Pay-at-pickup orders** (payment status never changes) — once SSE connects (`onopen`) the poll is
-  pure redundant load, so it's paused; `onerror` resumes it. This is the bulk of trackers at scale.
-- **Online orders** — keep the reconciliation poll running alongside SSE so Stripe-driven payment and
-  refund transitions still land promptly. No behavior change for them.
+- **Stripe webhook payment/refund changes are not published to the stream** — only seller-driven
+  changes are. So **online orders keep the tight 20s poll** throughout; it's their only path to
+  payment/refund reconciliation.
+- **The stream publisher is best-effort** (`publishOrderUpdate` swallows Durable Object failures).
+  Pay-at-pickup orders ride the stream for every change (status *and* `markPaid` → `paid`), but a
+  missed publish on a still-open `EventSource` doesn't fire `onerror`, so the poll can't be removed
+  without risking a stale page until a tab refocus/reconnect.
 
-> Fuller follow-up (not done): also publish payment/refund changes to the order stream from the Stripe
-> webhook + refund paths. That would let online orders drop the poll too — but it touches the money
-> path, so it's left as a deliberate next step.
+So once SSE connects we **relax** the poll rather than stopping it: pay-at-pickup backs off from 20s
+to a 60s reconciliation backstop; `onerror` tightens it straight back to 20s and refetches. That cuts
+the dominant pickup population's poll load ~3× while always keeping a safety net for a dropped frame.
+
+> Fuller follow-up (not done): publish payment/refund changes to the order stream from the Stripe
+> webhook + refund paths, and make the publish reliable. That would let online orders relax too and
+> shrink the backstop — but it touches the money path, so it's a deliberate next step.
 
 ### RLS tradeoff decisions
 
