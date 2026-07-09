@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "deploy": "wrangler deploy",
+    "deploy": "wrangler deploy --env=\"\"",
     "dev": "wrangler dev",
     "tail": "wrangler tail",
     "typegen": "wrangler types --env-interface ImageProcessorEnv image-processor-env.d.ts",
@@ -19,7 +19,7 @@
     "sharp": "^0.34.4",
     "typescript": "^5.9.3",
     "vitest": "^4.1.8",
-    "wrangler": "^4.103.0"
+    "wrangler": "^4.110.0"
   },
   "overrides": {
     "esbuild": "^0.28.1",
