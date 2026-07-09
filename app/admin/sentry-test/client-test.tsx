@@ -29,13 +29,9 @@ export function SentryClientTest() {
           {eventId ? "Captured" : "Waiting"}
         </Stamp>
       </div>
-      <p className="ab-body-sm text-ink-2">
-        Use this only in development and preview. Production returns not found.
-      </p>
+      <p className="ab-body-sm text-ink-2">Use this only in development and preview.</p>
       {eventId ? (
-        <p className="break-all font-mono text-sm tabular-nums text-ink">
-          {eventId}
-        </p>
+        <p className="break-all font-mono text-sm tabular-nums text-ink">{eventId}</p>
       ) : null}
       <Button onClick={captureClientEvent}>
         <Send aria-hidden="true" />

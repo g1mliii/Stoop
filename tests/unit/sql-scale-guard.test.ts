@@ -20,6 +20,14 @@ describe("SQL scale guards", () => {
     expect(sql).not.toMatch(/jsonb_build_object[\s\S]+select count\(\*\) from public\./i);
   });
 
+  it("keeps cost snapshots explicitly service-role-only under RLS", () => {
+    const sql = readMigration("20260709212011_cost_snapshot_service_role_policy.sql");
+
+    expect(sql).toMatch(
+      /create policy cost_snapshot_service_role_all on public\.cost_snapshot\s+for all to service_role\s+using \(true\)\s+with check \(true\)/i
+    );
+  });
+
   it("does not hold the store row lock across the whole place_order transaction", () => {
     const sql = maybeReadMigration("0039_order_caps_and_free.sql");
     if (!sql) return;

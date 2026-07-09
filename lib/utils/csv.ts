@@ -8,11 +8,18 @@ export type CsvColumn<Row> = {
   value: (row: Row) => string;
 };
 
+function neutralizeFormula(value: string): string {
+  // Spreadsheet apps can ignore leading whitespace before interpreting a formula. Prefix an
+  // apostrophe before RFC-4180 escaping so exported subscriber data always opens as text.
+  return /^[\t\r ]*[=+\-@]/.test(value) ? `'${value}` : value;
+}
+
 function escapeField(value: string): string {
-  if (/[",\r\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  const safeValue = neutralizeFormula(value);
+  if (/[",\r\n]/.test(safeValue)) {
+    return `"${safeValue.replace(/"/g, '""')}"`;
   }
-  return value;
+  return safeValue;
 }
 
 export function toCsv<Row>(rows: Row[], columns: CsvColumn<Row>[]): string {

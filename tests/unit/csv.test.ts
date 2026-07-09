@@ -48,4 +48,17 @@ describe("toCsv", () => {
     );
     expect(csv).toContain("plain@x.com,Jan 2026,active");
   });
+
+  it("neutralizes spreadsheet formulas before CSV escaping", () => {
+    const csv = toCsv(
+      [
+        { email: "=HYPERLINK(\"https://evil.test\")", joined: "Jan 2026", status: "active" },
+        { email: " @SUM(1,1)", joined: "Jan 2026", status: "active" }
+      ],
+      cols
+    );
+
+    expect(csv).toContain("'=");
+    expect(csv).toContain("' @SUM");
+  });
 });

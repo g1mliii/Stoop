@@ -17,7 +17,8 @@ const CHANNEL_LABELS: Record<string, string> = {
   direct: "Direct",
   instagram: "Instagram bio",
   whatsapp: "WhatsApp",
-  poster: "Printed poster"
+  poster: "Printed poster",
+  qr: "QR code"
 };
 
 function channelLabel(src: string): string {

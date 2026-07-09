@@ -12,6 +12,7 @@ describe("scanParamsSchema", () => {
   it("accepts a valid store + channel", () => {
     const parsed = scanParamsSchema.parse({ store: STORE, src: "instagram" });
     expect(parsed).toEqual({ store: STORE, src: "instagram" });
+    expect(scanParamsSchema.parse({ store: STORE, src: "qr" }).src).toBe("qr");
   });
 
   it("defaults a missing channel to direct", () => {
@@ -24,11 +25,11 @@ describe("scanParamsSchema", () => {
     );
   });
 
-  it("clamps a malformed or over-long channel to direct", () => {
+  it("clamps unknown channels to direct", () => {
     expect(scanParamsSchema.parse({ store: STORE, src: "bad src!!" }).src).toBe(
       SCAN_SRC_FALLBACK
     );
-    expect(scanParamsSchema.parse({ store: STORE, src: "x".repeat(40) }).src).toBe(
+    expect(scanParamsSchema.parse({ store: STORE, src: "unbounded-campaign" }).src).toBe(
       SCAN_SRC_FALLBACK
     );
   });

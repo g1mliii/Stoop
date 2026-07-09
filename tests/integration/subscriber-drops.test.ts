@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
+  anonClient,
   authedClient,
   cleanupUser,
   seedSeller,
@@ -24,6 +25,7 @@ vi.mock("server-only", () => ({}));
 // Requires migration 0032 applied to the target project.
 
 const service = serviceClient();
+const anon = anonClient();
 
 let sellerA: SeededSeller;
 let sellerB: SeededSeller;
@@ -101,6 +103,20 @@ describe("subscribers_owner_delete RLS", () => {
       .eq("id", sub.id)
       .maybeSingle();
     expect(data?.id).toBe(sub.id); // still there
+  });
+});
+
+describe("public subscriber input", () => {
+  it("rejects a formula-shaped email when callers bypass the app schema", async () => {
+    const { error } = await anon.from("subscribers").insert({
+      store_id: sellerA.storeId,
+      email: "=formula@example.test",
+      consent_email: true,
+      unsubscribe_token: generateToken(),
+      verified_at: new Date().toISOString()
+    });
+
+    expect(error).not.toBeNull();
   });
 });
 
