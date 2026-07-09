@@ -7,7 +7,9 @@ import sharp from "sharp";
 
 export const MAX_EDGE = 2048;
 export const MAX_BYTES = 4 * 1024 * 1024;
-export const MAX_INPUT_PIXELS = MAX_EDGE * MAX_EDGE;
+// 16 megapixels admits typical phone photos while keeping the decoded source bounded before
+// resize/re-encode. MAX_EDGE remains the output limit.
+export const MAX_INPUT_PIXELS = 16 * 1024 * 1024;
 export const ALLOWED_FORMATS = new Set(["jpeg", "png", "webp"]);
 export const GENERIC_REASON = "That image didn't work — try a JPG or PNG under 4 MB.";
 export const ANIMATED_REASON = "Animated images aren't supported yet — try a still photo.";
@@ -24,7 +26,7 @@ export async function processImage(buf) {
 
   try {
     // Limit pixels before Sharp decodes raster data so a small compressed image cannot force a
-    // disproportionate allocation. The explicit edge check below keeps the product's 2048px rule.
+    // disproportionate allocation. Oversized, safe inputs are normalized to MAX_EDGE below.
     const image = sharp(buf, { failOn: "error", limitInputPixels: MAX_INPUT_PIXELS });
     const meta = await image.metadata();
 
@@ -32,12 +34,7 @@ export async function processImage(buf) {
     if (!meta.format || !ALLOWED_FORMATS.has(meta.format)) {
       return { ok: false, reason: GENERIC_REASON };
     }
-    if (
-      !meta.width ||
-      !meta.height ||
-      meta.width > MAX_EDGE ||
-      meta.height > MAX_EDGE
-    ) {
+    if (!meta.width || !meta.height) {
       return { ok: false, reason: GENERIC_REASON };
     }
     if ((meta.pages ?? 1) > 1) {

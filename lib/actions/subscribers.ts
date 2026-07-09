@@ -53,20 +53,24 @@ export async function subscribe(input: unknown): Promise<SubscribeResult> {
 
   // Phase 9.3: Turnstile soft challenge + per-minute KV caps (per (ip, store) and per store) so
   // an open subscribe form can't be scripted to flood a roster. IP comes from the edge, not input.
-  const guard = await guardAnonWrite(parsed.data.turnstileToken, (ip, now) => [
-    {
-      key: subscribeIpStoreKey(ip, parsed.data.storeId, now),
-      amount: 1,
-      limit: SUBSCRIBE_IP_STORE_LIMIT,
-      windowSeconds: ANON_WINDOW_SECONDS
-    },
-    {
-      key: subscribeStoreKey(parsed.data.storeId, now),
-      amount: 1,
-      limit: SUBSCRIBE_STORE_LIMIT,
-      windowSeconds: ANON_WINDOW_SECONDS
-    }
-  ]);
+  const guard = await guardAnonWrite(parsed.data.turnstileToken, (ip, now) => ({
+    preTurnstile: [
+      {
+        key: subscribeIpStoreKey(ip, parsed.data.storeId, now),
+        amount: 1,
+        limit: SUBSCRIBE_IP_STORE_LIMIT,
+        windowSeconds: ANON_WINDOW_SECONDS
+      }
+    ],
+    postTurnstile: [
+      {
+        key: subscribeStoreKey(parsed.data.storeId, now),
+        amount: 1,
+        limit: SUBSCRIBE_STORE_LIMIT,
+        windowSeconds: ANON_WINDOW_SECONDS
+      }
+    ]
+  }));
   if (!guard.ok) {
     return {
       ok: false,

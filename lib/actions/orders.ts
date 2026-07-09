@@ -55,20 +55,24 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   // Phase 9.3: soft abuse controls before any DB work. The IP comes from the edge (cf-connecting-ip),
   // never the client body. Turnstile is the soft challenge; the KV windows are the hard caps, scoped
   // per (ip, store) and per store so a shared building NAT isn't blocked by one busy neighbour.
-  const guard = await guardAnonWrite(order.turnstileToken, (ip, now) => [
-    {
-      key: orderIpStoreKey(ip, order.storeId, now),
-      amount: 1,
-      limit: ORDER_IP_STORE_LIMIT,
-      windowSeconds: ANON_WINDOW_SECONDS
-    },
-    {
-      key: orderStoreKey(order.storeId, now),
-      amount: 1,
-      limit: ORDER_STORE_LIMIT,
-      windowSeconds: ANON_WINDOW_SECONDS
-    }
-  ]);
+  const guard = await guardAnonWrite(order.turnstileToken, (ip, now) => ({
+    preTurnstile: [
+      {
+        key: orderIpStoreKey(ip, order.storeId, now),
+        amount: 1,
+        limit: ORDER_IP_STORE_LIMIT,
+        windowSeconds: ANON_WINDOW_SECONDS
+      }
+    ],
+    postTurnstile: [
+      {
+        key: orderStoreKey(order.storeId, now),
+        amount: 1,
+        limit: ORDER_STORE_LIMIT,
+        windowSeconds: ANON_WINDOW_SECONDS
+      }
+    ]
+  }));
   if (!guard.ok) {
     return {
       ok: false,

@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import {
   ANIMATED_REASON,
   GENERIC_REASON,
+  MAX_EDGE,
+  MAX_INPUT_PIXELS,
   processImage
 } from "./process-image.mjs";
 
@@ -46,14 +48,27 @@ describe("processImage", () => {
     expect(result.data.subarray(8, 12).toString("ascii")).toBe("WEBP");
   });
 
-  it("rejects an image with a source edge over the max", async () => {
+  it("downscales a normal oversized image to the max edge", async () => {
     const huge = await sharp({
       create: { width: 3000, height: 1200, channels: 3, background: { r: 10, g: 10, b: 10 } }
     })
       .png()
       .toBuffer();
     const result = await processImage(huge);
-    expect(result).toEqual({ ok: false, reason: GENERIC_REASON });
+    expect(result.ok).toBe(true);
+    expect(result.width).toBe(MAX_EDGE);
+    expect(result.height).toBeLessThanOrEqual(MAX_EDGE);
+  });
+
+  it("rejects an image above the input-pixel limit", async () => {
+    const edge = Math.floor(Math.sqrt(MAX_INPUT_PIXELS)) + 1;
+    const oversized = await sharp({
+      create: { width: edge, height: edge, channels: 3, background: { r: 10, g: 10, b: 10 } }
+    })
+      .png()
+      .toBuffer();
+
+    expect(await processImage(oversized)).toEqual({ ok: false, reason: GENERIC_REASON });
   });
 
   it("rejects an SVG (vector / script-bearing)", async () => {
