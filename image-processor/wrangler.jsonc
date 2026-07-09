@@ -2,6 +2,8 @@
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "aptbazaar-image-processor",
   "main": "src/index.ts",
+  // This Worker only consumes the private image queue; it has no public HTTP surface.
+  "workers_dev": false,
   "compatibility_date": "2026-06-12",
   "compatibility_flags": ["nodejs_compat"],
   // Consumer side of the pipeline. The main app is the producer (see ../wrangler.jsonc).
@@ -57,6 +59,7 @@
   "env": {
     "preview": {
       "name": "aptbazaar-image-processor-preview",
+      "workers_dev": false,
       // Bindings are not inherited by named environments, so the preview deploy redeclares the
       // full set (bucket, queue consumer, container, durable object, migration) against the
       // preview resources.
