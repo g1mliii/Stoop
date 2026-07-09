@@ -7,11 +7,20 @@ import { uuid } from "./common";
 // and anything malformed or missing degrades to "direct" rather than rejecting the beacon.
 
 export const SCAN_SRC_FALLBACK = "direct";
+// Attribution is a fixed product taxonomy, not user-controlled analytics text. Keeping this set
+// bounded guarantees public scan requests cannot create unbounded aggregate-row cardinality.
+export const SCAN_SOURCES = [
+  "direct",
+  "instagram",
+  "whatsapp",
+  "poster",
+  "qr"
+] as const;
 
 const srcSchema = z
   .preprocess(
     (value) => (typeof value === "string" ? value.trim().toLowerCase() : value),
-    z.string().regex(/^[a-z0-9_-]{1,20}$/)
+    z.enum(SCAN_SOURCES)
   )
   .catch(SCAN_SRC_FALLBACK);
 

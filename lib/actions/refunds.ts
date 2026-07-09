@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { writeAuditLog } from "@/lib/audit/log";
 import { getStripe } from "@/lib/stripe/client";
+import { createSupabaseSecretClient } from "@/lib/supabase/secret";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Phase 5.8: refund an order. v1 is full refunds only — stripe.refunds.create with no amount
@@ -34,7 +35,9 @@ export async function refundOrder(orderId: string): Promise<RefundResult> {
   // ownership check. Explicit columns, never select * against orders (hard invariant 6).
   const { data: order } = await supabase
     .from("orders")
-    .select("id, payment_mode, payment_status, stripe_payment_intent_id, idempotency_key")
+    .select(
+      "id, total_cents, currency, payment_mode, payment_status, stripe_payment_intent_id, idempotency_key"
+    )
     .eq("id", parsed.data)
     .maybeSingle();
   if (!order) {
@@ -53,11 +56,25 @@ export async function refundOrder(orderId: string): Promise<RefundResult> {
   }
 
   try {
+    const stripe = getStripe();
+    const paymentIntent = await stripe.paymentIntents.retrieve(
+      order.stripe_payment_intent_id
+    );
+    // Payment metadata is written only when Stoop creates Checkout. Verifying it here prevents a
+    // stale or previously tampered database value from targeting another Stripe PaymentIntent.
+    if (
+      paymentIntent.metadata.order_id !== order.id ||
+      paymentIntent.amount !== order.total_cents ||
+      paymentIntent.currency !== order.currency.toLowerCase()
+    ) {
+      return { ok: false, error: "Only a paid online order can be refunded." };
+    }
+
     // Destination charge: the funds settled on the seller's connected account and Stoop took an
     // application fee. A full refund must pull the transfer back from the connected account
     // (reverse_transfer) and return our fee (refund_application_fee) — otherwise the platform
     // balance funds the refund and the seller keeps both the sale and the fee.
-    await getStripe().refunds.create(
+    await stripe.refunds.create(
       {
         payment_intent: order.stripe_payment_intent_id,
         reverse_transfer: true,
@@ -73,7 +90,8 @@ export async function refundOrder(orderId: string): Promise<RefundResult> {
   // timeline, and the refund can still fail. Move to the in-between refund_pending state now; the
   // charge.refunded webhook confirms it to 'refunded', a refund-failure event flips it to
   // 'refund_failed'. The guarded paid→refund_pending update also serializes a double-click.
-  const { data: updated, error: updateError } = await supabase
+  const secret = createSupabaseSecretClient();
+  const { data: updated, error: updateError } = await secret
     .from("orders")
     .update({ payment_status: "refund_pending" })
     .eq("id", order.id)

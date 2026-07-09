@@ -47,7 +47,7 @@ describe("guardAnonWrite", () => {
     mocks.verifyTurnstile.mockResolvedValue(true);
   });
 
-  it("sheds over-limit traffic before calling Turnstile siteverify", async () => {
+  it("checks Turnstile before applying the rate limit", async () => {
     expect(await guardAnonWrite("tok", oneShotWindow)).toEqual({ ok: true });
     expect(mocks.verifyTurnstile).toHaveBeenCalledTimes(1);
 
@@ -56,15 +56,20 @@ describe("guardAnonWrite", () => {
       ok: false,
       reason: "rate_limit"
     });
-    expect(mocks.verifyTurnstile).not.toHaveBeenCalled();
+    expect(mocks.verifyTurnstile).toHaveBeenCalledTimes(1);
   });
 
-  it("still reports a Turnstile failure when the request is under the hard cap", async () => {
+  it("does not reserve public-write capacity for a failed Turnstile challenge", async () => {
     mocks.verifyTurnstile.mockResolvedValue(false);
 
     await expect(guardAnonWrite("bad-token", oneShotWindow)).resolves.toEqual({
       ok: false,
       reason: "turnstile"
+    });
+
+    mocks.verifyTurnstile.mockResolvedValue(true);
+    await expect(guardAnonWrite("good-token", oneShotWindow)).resolves.toEqual({
+      ok: true
     });
   });
 });

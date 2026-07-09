@@ -14,23 +14,32 @@ import {
 export const ADMIN_COOKIE_NAME = "admin_session";
 // 12 hours: long enough for a founder working session, short enough that a leaked cookie expires.
 export const ADMIN_COOKIE_TTL_SECONDS = 12 * 60 * 60;
+const ADMIN_SESSION_AUDIENCE = "stoop-admin-session";
 
 interface AdminSessionPayload {
+  audience: typeof ADMIN_SESSION_AUDIENCE;
   issuedAt: number;
 }
 
 /** Returns the signed cookie value proving the holder cleared the /admin login gate. */
 export async function signAdminSession(issuedAt: number): Promise<string> {
-  return signCookiePayload({ issuedAt } satisfies AdminSessionPayload);
+  return signCookiePayload({
+    audience: ADMIN_SESSION_AUDIENCE,
+    issuedAt
+  } satisfies AdminSessionPayload);
 }
 
 /** True only when the cookie was signed by us and is still within its TTL. */
 export async function verifyAdminSession(
   raw: string | undefined,
-  now: number
+  now = Date.now()
 ): Promise<boolean> {
   const parsed = (await readCookiePayload(raw)) as Partial<AdminSessionPayload> | null;
-  if (!parsed || typeof parsed.issuedAt !== "number") {
+  if (
+    !parsed ||
+    parsed.audience !== ADMIN_SESSION_AUDIENCE ||
+    typeof parsed.issuedAt !== "number"
+  ) {
     return false;
   }
   return now - parsed.issuedAt <= ADMIN_COOKIE_TTL_SECONDS * 1000;

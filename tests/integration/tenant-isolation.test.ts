@@ -20,6 +20,8 @@ let deleteAttempt: SeededSeller;
 let deleteClient: Db;
 let buildingId: string;
 let membershipId: string;
+let ownMembershipId: string;
+let ownMembershipBuildingId: string;
 let stripeEventId: string;
 let connectedAccountId: string;
 let auditLogId: string;
@@ -60,6 +62,28 @@ beforeAll(async () => {
     .select("id")
     .single();
   membershipId = (membership as { id: string }).id;
+
+  const { data: ownMembershipBuilding } = await service
+    .from("buildings")
+    .insert({
+      normalized_key: `owner-key-${Date.now()}`,
+      display_name: "Owner building",
+      public_slug: `owner-${Date.now()}`
+    })
+    .select("id")
+    .single();
+  ownMembershipBuildingId = (ownMembershipBuilding as { id: string }).id;
+
+  const { data: ownMembership } = await service
+    .from("building_memberships")
+    .insert({
+      building_id: ownMembershipBuildingId,
+      store_id: sellerA.storeId,
+      status: "active"
+    })
+    .select("id")
+    .single();
+  ownMembershipId = (ownMembership as { id: string }).id;
 
   const { data: stripeEvent } = await service
     .from("stripe_events")
@@ -131,6 +155,7 @@ afterAll(async () => {
   await cleanupUser(service, sellerB.userId);
   await cleanupUser(service, inactive.userId);
   await cleanupUser(service, deleteAttempt.userId);
+  await service.from("buildings").delete().eq("id", ownMembershipBuildingId);
   await service.from("buildings").delete().eq("id", buildingId);
 });
 
@@ -281,6 +306,29 @@ describe("anon (public storefront)", () => {
     const { data } = await service.from("orders").select("notes").eq("id", sellerA.orderId).single();
     expect((data as { notes: string | null }).notes).toBeNull();
   });
+
+  it("cannot directly change payment state on an owned order", async () => {
+    const { data: before } = await service
+      .from("orders")
+      .select("payment_status, stripe_payment_intent_id")
+      .eq("id", sellerA.orderId)
+      .single();
+
+    await clientA
+      .from("orders")
+      .update({
+        payment_status: "paid",
+        stripe_payment_intent_id: "pi_tampered_by_seller"
+      })
+      .eq("id", sellerA.orderId);
+
+    const { data: after } = await service
+      .from("orders")
+      .select("payment_status, stripe_payment_intent_id")
+      .eq("id", sellerA.orderId)
+      .single();
+    expect(after).toEqual(before);
+  });
 });
 
 describe("sensitive seller operations stay behind server actions", () => {
@@ -293,6 +341,26 @@ describe("sensitive seller operations stay behind server actions", () => {
       .eq("id", deleteAttempt.storeId)
       .single();
     expect(data?.id).toBe(deleteAttempt.storeId);
+  });
+
+  it("cannot rewrite an owned building membership", async () => {
+    const { data: before } = await service
+      .from("building_memberships")
+      .select("building_id, status")
+      .eq("id", ownMembershipId)
+      .single();
+
+    await clientA
+      .from("building_memberships")
+      .update({ building_id: buildingId, status: "active" })
+      .eq("id", ownMembershipId);
+
+    const { data: after } = await service
+      .from("building_memberships")
+      .select("building_id, status")
+      .eq("id", ownMembershipId)
+      .single();
+    expect(after).toEqual(before);
   });
 });
 

@@ -7,6 +7,7 @@ import sharp from "sharp";
 
 export const MAX_EDGE = 2048;
 export const MAX_BYTES = 4 * 1024 * 1024;
+export const MAX_INPUT_PIXELS = MAX_EDGE * MAX_EDGE;
 export const ALLOWED_FORMATS = new Set(["jpeg", "png", "webp"]);
 export const GENERIC_REASON = "That image didn't work — try a JPG or PNG under 4 MB.";
 export const ANIMATED_REASON = "Animated images aren't supported yet — try a still photo.";
@@ -22,11 +23,21 @@ export async function processImage(buf) {
   }
 
   try {
-    const image = sharp(buf, { failOn: "error" });
+    // Limit pixels before Sharp decodes raster data so a small compressed image cannot force a
+    // disproportionate allocation. The explicit edge check below keeps the product's 2048px rule.
+    const image = sharp(buf, { failOn: "error", limitInputPixels: MAX_INPUT_PIXELS });
     const meta = await image.metadata();
 
     // Reject svg (vector / script-bearing), unknown formats, and animated frames.
     if (!meta.format || !ALLOWED_FORMATS.has(meta.format)) {
+      return { ok: false, reason: GENERIC_REASON };
+    }
+    if (
+      !meta.width ||
+      !meta.height ||
+      meta.width > MAX_EDGE ||
+      meta.height > MAX_EDGE
+    ) {
       return { ok: false, reason: GENERIC_REASON };
     }
     if ((meta.pages ?? 1) > 1) {
