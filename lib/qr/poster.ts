@@ -1,7 +1,5 @@
 import QRCode from "qrcode";
 
-import { requiredEnv } from "@/lib/env";
-
 import { rasterizeQrPng, type ModuleMatrix, type Rgb } from "./png-encode";
 
 // Phase 7.1: the full sharing system. storefrontQrSvg stays the plain, max-contrast printable QR
@@ -11,7 +9,11 @@ import { rasterizeQrPng, type ModuleMatrix, type Rgb } from "./png-encode";
 
 /** Public storefront URL for a store slug. No tracking suffix on the printable version. */
 function appUrl(baseUrl?: string): string {
-  return (baseUrl ?? requiredEnv("NEXT_PUBLIC_APP_URL")).replace(/\/+$/, "");
+  const value = baseUrl ?? process.env.NEXT_PUBLIC_APP_URL;
+  if (!value) {
+    throw new Error("NEXT_PUBLIC_APP_URL is required.");
+  }
+  return value.replace(/\/+$/, "");
 }
 
 export function storefrontUrl(slug: string, baseUrl?: string): string {

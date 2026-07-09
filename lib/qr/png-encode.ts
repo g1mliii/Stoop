@@ -1,5 +1,3 @@
-import "server-only";
-
 // Phase 7.1: a hand-rolled, dependency-free PNG encoder (1-bit indexed) used to rasterize QR
 // art server-side. The `qrcode` lib's PNG path goes through pngjs → Node streams + zlib, which is
 // fragile under the OpenNext Worker runtime. A *stored* (uncompressed) DEFLATE stream needs no
