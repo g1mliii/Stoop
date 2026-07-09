@@ -59,6 +59,12 @@
       }
     ]
   },
+  "services": [
+    {
+      "binding": "QR_GENERATOR",
+      "service": "aptbazaar-qr-generator-preview"
+    }
+  ],
   // Phase 7.6 weekly orphan sweep: the scheduled() handler in worker.mjs reclaims QR cache objects
   // whose store is gone or whose slug/visibility has changed. Sunday 05:00 UTC.
   "triggers": {
@@ -115,6 +121,12 @@
           }
         ]
       },
+      "services": [
+        {
+          "binding": "QR_GENERATOR",
+          "service": "aptbazaar-qr-generator-preview"
+        }
+      ],
       "triggers": {
         "crons": ["0 5 * * SUN"]
       },
@@ -165,6 +177,12 @@
           }
         ]
       },
+      "services": [
+        {
+          "binding": "QR_GENERATOR",
+          "service": "aptbazaar-qr-generator"
+        }
+      ],
       "triggers": {
         "crons": ["0 5 * * SUN"]
       },

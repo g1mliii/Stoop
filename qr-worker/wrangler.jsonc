@@ -1,0 +1,31 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "aptbazaar-qr-generator",
+  "main": "index.ts",
+  "compatibility_date": "2026-06-12",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "r2_buckets": [
+    {
+      "binding": "QR_BUCKET",
+      "bucket_name": "aptbazaar-qr"
+    }
+  ],
+  "vars": {
+    "APP_BASE_URL": "https://stoop.app"
+  },
+  "env": {
+    "preview": {
+      "name": "aptbazaar-qr-generator-preview",
+      "r2_buckets": [
+        {
+          "binding": "QR_BUCKET",
+          "bucket_name": "aptbazaar-qr-preview"
+        }
+      ],
+      "vars": {
+        "APP_BASE_URL": "https://aptbazaar-preview.workers.dev"
+      }
+    }
+  }
+}

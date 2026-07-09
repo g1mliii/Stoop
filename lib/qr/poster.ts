@@ -12,22 +12,26 @@ import { rasterizeQrPng, type ModuleMatrix, type Rgb } from "./png-encode";
 // mark into the finder cell (bumped to error-correction H so the occlusion is safe).
 
 /** Public storefront URL for a store slug. No tracking suffix on the printable version. */
-export function storefrontUrl(slug: string): string {
-  const base = requiredEnv("NEXT_PUBLIC_APP_URL").replace(/\/+$/, "");
+function appUrl(baseUrl?: string): string {
+  return (baseUrl ?? requiredEnv("NEXT_PUBLIC_APP_URL")).replace(/\/+$/, "");
+}
+
+export function storefrontUrl(slug: string, baseUrl?: string): string {
+  const base = appUrl(baseUrl);
   return `${base}/s/${slug}`;
 }
 
 /** Storefront URL tagged with a share channel — only ever used for shareable links, never print. */
-export function shareUrl(slug: string, src: string): string {
-  return `${storefrontUrl(slug)}?src=${encodeURIComponent(src)}`;
+export function shareUrl(slug: string, src: string, baseUrl?: string): string {
+  return `${storefrontUrl(slug, baseUrl)}?src=${encodeURIComponent(src)}`;
 }
 
 /**
  * Public building-bazaar URL (Phase 8.6). For invite buildings the printed QR carries the shared
  * code so a scan lands through the middleware's code → cookie exchange straight onto the bazaar.
  */
-export function bazaarUrl(slug: string, code?: string | null): string {
-  const base = requiredEnv("NEXT_PUBLIC_APP_URL").replace(/\/+$/, "");
+export function bazaarUrl(slug: string, code?: string | null, baseUrl?: string): string {
+  const base = appUrl(baseUrl);
   const url = `${base}/b/${slug}`;
   return code ? `${url}?code=${encodeURIComponent(code)}` : url;
 }
@@ -62,8 +66,8 @@ export function qrPngForUrl(url: string, size: number): Uint8Array {
 }
 
 /** Returns an inline SVG QR string for the store's public storefront. */
-export async function storefrontQrSvg(slug: string): Promise<string> {
-  return qrSvgForUrl(storefrontUrl(slug));
+export async function storefrontQrSvg(slug: string, baseUrl?: string): Promise<string> {
+  return qrSvgForUrl(storefrontUrl(slug, baseUrl));
 }
 
 /**
@@ -85,8 +89,8 @@ export async function brandedStorefrontQrSvg(slug: string): Promise<string> {
 }
 
 /** PNG QR (plain ink on white, max contrast). `size` is an approximate target edge in pixels. */
-export function storefrontQrPng(slug: string, size: number): Uint8Array {
-  return qrPngForUrl(storefrontUrl(slug), size);
+export function storefrontQrPng(slug: string, size: number, baseUrl?: string): Uint8Array {
+  return qrPngForUrl(storefrontUrl(slug, baseUrl), size);
 }
 
 function qrModules(text: string, errorCorrectionLevel: "M" | "H"): ModuleMatrix {

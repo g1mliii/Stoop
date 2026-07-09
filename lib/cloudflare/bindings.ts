@@ -6,6 +6,7 @@ type WorkerBindings = {
   UPLOADS_BUCKET?: R2Bucket;
   QR_BUCKET?: R2Bucket;
   IMAGE_QUEUE?: ImageQueue;
+  QR_GENERATOR?: Fetcher;
 };
 
 function workerBindings(): WorkerBindings | null {
@@ -29,4 +30,9 @@ export function getQrBucket(): R2Bucket | null {
 /** Producer side of the image-processing queue. Null outside the Worker runtime. */
 export function getImageQueue(): ImageQueue | null {
   return workerBindings()?.IMAGE_QUEUE ?? null;
+}
+
+/** Internal Worker that generates cached QR downloads without bloating the storefront bundle. */
+export function getQrGenerator(): Fetcher | null {
+  return workerBindings()?.QR_GENERATOR ?? null;
 }
