@@ -1,5 +1,3 @@
-import "server-only";
-
 import fontkit from "@pdf-lib/fontkit";
 import {
   PDFDocument,

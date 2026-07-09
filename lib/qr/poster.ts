@@ -1,5 +1,3 @@
-import "server-only";
-
 import QRCode from "qrcode";
 
 import { requiredEnv } from "@/lib/env";
