@@ -22,10 +22,10 @@
     "verify:image-processor": "npm --prefix image-processor run verify",
     "audit:ci": "npm audit --audit-level=high --omit=dev && npm --prefix image-processor audit --audit-level=high --omit=dev",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy --env production --minify",
+    "cf:deploy": "opennextjs-cloudflare build && wrangler deploy --config wrangler.jsonc --env production --minify",
     "cf:deploy:qr": "wrangler deploy --config qr-worker/wrangler.jsonc --env=\"\"",
     "cf:deploy:qr:preview": "wrangler deploy --config qr-worker/wrangler.jsonc --env preview",
-    "cf:deploy:all": "npm run cf:deploy:qr && npm run cf:deploy",
+    "cf:deploy:all": "npm run cf:deploy:qr && npm --prefix image-processor run deploy && npm run cf:deploy",
     "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "supabase:migration:list": "supabase migration list",
     "supabase:gen-types": "supabase gen types typescript --local"
